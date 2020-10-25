@@ -224,7 +224,6 @@ Newlines in the body will be escaped as `\n` to keep the log on a single line:
 curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
 ```
 
-Only the requested keys including the body are logged.
 ```shell
 curl -d '{
   "key1":"value1",
@@ -232,6 +231,7 @@ curl -d '{
 }' -H "Content-Type: application/json" -X POST http://localhost:9081/data
 ```
 
+The body is logged on a single line:
 ```
 2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 Method                                   = POST
 2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 URL                                      = /data
