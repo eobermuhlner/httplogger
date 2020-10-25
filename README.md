@@ -49,3 +49,19 @@ Example for a GET request from a web browser:
 2020/10/25 11:17:35 2020-10-25T11:17:35+01:00#1 Header.Upgrade-Insecure-Requests         = [1]
 2020/10/25 11:17:35 2020-10-25T11:17:35+01:00#1 Header.User-Agent                        = [Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36]
 ```
+
+Example with JWT bearer token using curl
+
+```shell
+curl -s -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" http://localhost:9081/foo
+```
+
+```
+2020/10/25 11:24:36 2020-10-25T11:24:36+01:00#3 Method                                   = GET
+2020/10/25 11:24:36 2020-10-25T11:24:36+01:00#3 URL                                      = /foo
+2020/10/25 11:24:36 2020-10-25T11:24:36+01:00#3 RemoteAddr                               = [::1]:49357
+2020/10/25 11:24:36 2020-10-25T11:24:36+01:00#3 Header.Accept                            = [*/*]
+2020/10/25 11:24:36 2020-10-25T11:24:36+01:00#3 Header.Authorization                     = [Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c]
+2020/10/25 11:24:36 2020-10-25T11:24:36+01:00#3 Header.User-Agent                        = [curl/7.65.3]
+2020/10/25 11:24:36 2020-10-25T11:24:36+01:00#3 JWT.Payload                              = {"sub":"1234567890","name":"John Doe","iat":1516239022}
+```
