@@ -9,7 +9,7 @@ The `httplogger` logs for every request:
 - URL
 - RemoteAddr
 - Header.*
-- JWT.Payload (if encountered in `Authorization: Bearer` header)
+- JWT.* (if the header `Authorization: Bearer` contains a valid JWT)
 
 Every logged request is identified with a unique request id consisting of:
 - RFC3339 timestamp
@@ -31,9 +31,10 @@ Usage of httplogger:
         - RemoteAddr
         - Header.*
         - JWT.*
+        - JWT.Header
         - JWT.PayLoad
         "Header.*" will match all headers.
-        Alternatively list the explicit headers to log (e.g. "Header.Accept").
+        Alternatively list the explicit headers (e.g. "Header.Accept").
   -port int
         Server port to listen. (default 8080)
   -response string
@@ -104,5 +105,6 @@ curl -s -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiO
 2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 Header.Accept                            = */*
 2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 Header.Authorization                     = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
 2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 Header.User-Agent                        = curl/7.65.3
+2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 JWT.Header                               = {"alg":"HS256","typ":"JWT"}
 2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 JWT.Payload                              = {"sub":"1234567890","name":"John Doe","iat":1516239022}
 ```

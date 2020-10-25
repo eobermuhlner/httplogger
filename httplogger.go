@@ -24,8 +24,9 @@ func main() {
 		"- Header.*\n"+
 		"- JWT.*\n"+
 		"- JWT.PayLoad\n"+
+		"- JWT.Header\n"+
 		"\"Header.*\" will match all headers.\n"+
-		"Alternatively list the explicit headers to log (e.g. \"Header.Accept\").\n"+
+		"Alternatively list the explicit headers (e.g. \"Header.Accept\").\n"+
 		"The default will log everything.")
 	flag.Parse()
 
@@ -68,14 +69,19 @@ func main() {
 			for _, authorization := range authorizations {
 				if strings.HasPrefix(authorization, "Bearer ") {
 					token := authorization[7:]
-					jwtPayload, err := DecodeJWT(token)
-					if jwtPayload != "" {
-						if MatchesKeys("JWT.*", keys) || MatchesKeys("JWT.Payload", keys) {
-							LogString(req, "JWT.Payload", jwtPayload)
+					if MatchesKeys("JWT.*", keys) || MatchesKeys("JWT.Header", keys) {
+						if jwtHeader, err := DecodeJWT(token, 0); err == nil {
+							LogString(req, "JWT.Header", jwtHeader)
+						} else {
+							log.Printf("WARN Invalid JWT header: %v", err)
 						}
 					}
-					if err != nil {
-						log.Printf("WARN Invalid JWT: %v", err)
+					if MatchesKeys("JWT.*", keys) || MatchesKeys("JWT.Payload", keys) {
+						if jwtPayload, err := DecodeJWT(token, 1); err == nil {
+							LogString(req, "JWT.Payload", jwtPayload)
+						} else {
+							log.Printf("WARN Invalid JWT payload: %v", err)
+						}
 					}
 				}
 			}
@@ -105,11 +111,10 @@ func SortedKeys(m map[string][]string) []string {
 	return keys
 }
 
-func DecodeJWT(token string) (string, error) {
+func DecodeJWT(token string, index int) (string, error) {
 	splitToken := strings.Split(token, ".")
-	if len(splitToken) >= 2 {
-		tokenPayload := splitToken[1]
-		jwt, err := base64.RawURLEncoding.DecodeString(tokenPayload)
+	if len(splitToken) >= index+1 {
+		jwt, err := base64.RawURLEncoding.DecodeString(splitToken[index])
 		if err != nil {
 			return string(jwt), err
 		}
