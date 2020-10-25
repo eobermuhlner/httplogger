@@ -14,10 +14,7 @@ The `httplogger` logs the following information for every request:
 - TransferEncoding
 - Header.* (all headers present in the request)
 - JWT.* (if the header `Authorization: Bearer` contains a valid JWT)
-
-
-Because the body can be very large you need to explicitely add it 
-- Body ()
+- Body (body of the request with newlines escaped as \n)
 
 Every logged request is identified with a unique request id consisting of:
 - RFC3339 timestamp
@@ -46,14 +43,16 @@ Usage of httplogger:
         - JWT.*
         - JWT.PayLoad
         - JWT.Header
-        - Body (not in default)
+        - Body
+
+        The keys are case insensitive.
 
         "Header.*" will match all headers.
         Alternatively list the explicit headers (e.g. "Header.Accept").
 
-        The body can be very large and is therefore not part of the "*" group.
-        To log all keys and the body you need to specify -log '*,body'
-        The default will log everything except the body.
+        To explicitely exclude a key, prefix it with "!"
+        Example: -log '*,!body'
+
          (default "*")
   -port int
         Server port to listen. (default 8080)
@@ -171,12 +170,14 @@ Only the requested log keys show up.
 
 Example for sending JSON as a POST request using curl:
 
+```
+httplogger -port 9081
+```
+
 ```shell
 curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
 ```
 
-Note that output does not contain the body of the request.
-Because the body may be very large it is per default not logged.
 ```
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Proto                                    = HTTP/1.1
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Host                                     = localhost:9081
@@ -188,52 +189,15 @@ Because the body may be very large it is per default not logged.
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.Content-Length                    = 34
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.Content-Type                      = application/json
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.User-Agent                        = curl/7.65.3
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Body                                     = {"key1":"value1", "key2":"value2"}
 ```
 
-### Example: POST request with body
-
-To log the body for request you start the server using:
-```shell
-httplogger -port 9081 -body
-```
-
-```shell
-curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
-```
-
-```
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Proto                                    = HTTP/1.1
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Host                                     = localhost:9081
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 RequestURI                               = /data
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Method                                   = POST
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 URL                                      = /data
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 RemoteAddr                               = [::1]:65528
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.Accept                            = */*
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.Content-Length                    = 34
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.Content-Type                      = application/json
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.User-Agent                        = curl/7.65.3
-2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Body                                     = {"key1":"value1", "key2":"value2"}
-```
-
-or you can explicitely list `Body` key in the `-log` option.
-```shell
-httplogger -port 9081 -log "method,url,body"
-```
-
-```shell
-curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
-```
-
-Only the requested keys including the body are logged.
-```
-2020/10/25 16:01:47 2020-10-25T16:01:47+01:00#1 Method                                   = POST
-2020/10/25 16:01:47 2020-10-25T16:01:47+01:00#1 URL                                      = /data
-2020/10/25 16:01:47 2020-10-25T16:01:47+01:00#1 Body                                     = {"key1":"value1", "key2":"value2"}
-```
+### Example: POST request with newlines in body
 
 Newlines in the body will be escaped as `\n` to keep the log on a single line:
-```shell
-curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
+
+```
+httplogger -port 9081 -log method,url,body
 ```
 
 ```shell
@@ -248,4 +212,29 @@ The body is logged on a single line:
 2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 Method                                   = POST
 2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 URL                                      = /data
 2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 Body                                     = {\n  "key1":"value1",\n  "key2":"value2"\n}
+```
+
+### Example: POST request without body
+
+To exclude a key from logging prefix it with "!":
+```
+httplogger -port 9081 -log '*,!body'
+```
+
+```shell
+curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
+```
+
+The body is not logged:
+```
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Proto                                    = HTTP/1.1
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Host                                     = localhost:9081
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 RequestURI                               = /data
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Method                                   = POST
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 URL                                      = /data
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 RemoteAddr                               = [::1]:65308
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.Accept                            = */*
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.Content-Length                    = 34
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.Content-Type                      = application/json
+2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.User-Agent                        = curl/7.65.3
 ```

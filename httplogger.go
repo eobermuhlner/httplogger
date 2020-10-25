@@ -50,15 +50,16 @@ func main() {
 		"- JWT.*\n"+
 		"- JWT.PayLoad\n"+
 		"- JWT.Header\n"+
-		"- Body (not in default)\n"+
+		"- Body\n"+
+		"\n"+
+		"The keys are case insensitive.\n"+
 		"\n"+
 		"\"Header.*\" will match all headers.\n"+
 		"Alternatively list the explicit headers (e.g. \"Header.Accept\").\n"+
 		"\n"+
-		"The body can be very large and is therefore not part of the \"*\" group.\n"+
-		"To log all keys and the body you need to specify -log '*,body'"+
-		"\n"+
-		"The default will log everything except the body.\n")
+		"To explicitely exclude a key, prefix it with \"!\"\n"+
+		"Example: -log '*,!body'\n"+
+		"\n")
 	flag.Parse()
 
 	if *logs != "" {
@@ -69,7 +70,10 @@ func main() {
 
 	requestId := RequestId{}
 
-	log.Println("Started httplogger", *port, *logs)
+	log.Println("Started httplogger")
+	log.Println("port =", *port)
+	log.Println("logs =", *logs)
+	log.Println("response =", EncodeBackslash(*response))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := fmt.Fprint(w, *response)
@@ -129,7 +133,7 @@ func main() {
 			}
 		}
 
-		if MatchesKey("Body") {
+		if MatchesKey("*", "Body") {
 			if bodyBytes, err := ioutil.ReadAll(r.Body); err == nil {
 				body := EncodeBackslash(string(bodyBytes))
 				if body != "" {
@@ -145,6 +149,11 @@ func main() {
 }
 
 func MatchesKey(key ...string) bool {
+	for _, k := range key {
+		if _, ok := keys["!"+strings.ToLower(k)]; ok {
+			return false
+		}
+	}
 	for _, k := range key {
 		if _, ok := keys[strings.ToLower(k)]; ok {
 			return true
@@ -193,6 +202,8 @@ func EncodeBackslash(str string) string {
 		switch c {
 		case '\n':
 			result.WriteString("\\n")
+		case '\\':
+			result.WriteString("\\\\")
 		default:
 			result.WriteString(string(c))
 		}
