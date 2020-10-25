@@ -15,12 +15,18 @@ import (
 
 func main() {
 	port := flag.Int("port", 8080, "Server port")
+	response := flag.String("response", "", "Response")
 	flag.Parse()
 
 	log.Println("Started httplogger")
 	count := 0
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, err := fmt.Fprint(w, *response)
+		if err != nil {
+			log.Printf("WARN Failed writing response: %v", err)
+		}
+
 		count++
 		req := fmt.Sprintf("%v#%v", time.Now().Format(time.RFC3339), count)
 
