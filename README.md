@@ -70,7 +70,9 @@ Main use cases are:
 In a Kubernetes/Istio shadow traffic can be used to send a copy of the HTTP request to `httplogger`. 
 
 
-## Example
+## Examples
+
+### Example: GET requests
 
 Example for a GET request (actually 2 requests) from a web browser:
 
@@ -113,12 +115,16 @@ Example for a GET request (actually 2 requests) from a web browser:
 2020/10/25 15:18:09 2020-10-25T15:18:09+01:00#2 Header.User-Agent                        = Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36
 ```
 
+### Example: GET requests with JWT token
+
 Example with JWT bearer token (see [jwt.io](https://jwt.io/#debugger-io)) using curl:
 
 ```shell
 curl -s -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" http://localhost:9081/foo
 ```
 
+Note that the `Authorization: Bearer` information shows up multiple times,
+once as header and once decoded as JWT header and payload.
 ```
 2020/10/25 15:19:10 2020-10-25T15:19:10+01:00#3 Proto                                    = HTTP/1.1
 2020/10/25 15:19:10 2020-10-25T15:19:10+01:00#3 Host                                     = localhost:9081
@@ -133,12 +139,15 @@ curl -s -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiO
 2020/10/25 15:19:10 2020-10-25T15:19:10+01:00#3 JWT.Payload                              = {"sub":"1234567890","name":"John Doe","iat":1516239022}
 ```
 
+### Example: Limiting log keys
+
 Testing the same example with a JWT bearer token but limiting the logged keys:
 
 ```
 httplogger -port 9081 -response "Hello, world" -log "method,url,header.user-agent,jwt.payload
 ```
 
+Only the requested log keys show up.
 ```
 2020/10/25 15:20:13 2020-10-25T15:20:13+01:00#1 Method                                   = GET
 2020/10/25 15:20:13 2020-10-25T15:20:13+01:00#1 URL                                      = /foo
@@ -146,12 +155,16 @@ httplogger -port 9081 -response "Hello, world" -log "method,url,header.user-agen
 2020/10/25 15:20:13 2020-10-25T15:20:13+01:00#1 JWT.Payload                              = {"sub":"1234567890","name":"John Doe","iat":1516239022}
 ```
 
-Example for sending JSON as a POST request using curl
+### Example: POST request
+
+Example for sending JSON as a POST request using curl:
 
 ```shell
 curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
 ```
 
+Note that output does not contain the body of the request.
+Because the body may be very large it is per default not logged.
 ```
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Proto                                    = HTTP/1.1
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Host                                     = localhost:9081
@@ -163,4 +176,64 @@ curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json"
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.Content-Length                    = 34
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.Content-Type                      = application/json
 2020/10/25 15:39:07 2020-10-25T15:39:07+01:00#4 Header.User-Agent                        = curl/7.65.3
+```
+
+### Example: POST request with body
+
+To log the body for request you start the server using:
+```shell
+httplogger -port 9081 -body
+```
+
+```shell
+curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
+```
+
+```
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Proto                                    = HTTP/1.1
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Host                                     = localhost:9081
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 RequestURI                               = /data
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Method                                   = POST
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 URL                                      = /data
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 RemoteAddr                               = [::1]:65528
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.Accept                            = */*
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.Content-Length                    = 34
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.Content-Type                      = application/json
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Header.User-Agent                        = curl/7.65.3
+2020/10/25 15:52:10 2020-10-25T15:52:10+01:00#1 Body                                     = {"key1":"value1", "key2":"value2"}
+```
+
+or you can explicitely list `Body` key in the `-log` option.
+```shell
+httplogger -port 9081 -log "method,url,body"
+```
+
+```shell
+curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
+```
+
+Only the requested keys including the body are logged.
+```
+2020/10/25 16:01:47 2020-10-25T16:01:47+01:00#1 Method                                   = POST
+2020/10/25 16:01:47 2020-10-25T16:01:47+01:00#1 URL                                      = /data
+2020/10/25 16:01:47 2020-10-25T16:01:47+01:00#1 Body                                     = {"key1":"value1", "key2":"value2"}
+```
+
+Newlines in the body will be escaped as `\n` to keep the log on a single line:
+```shell
+curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
+```
+
+Only the requested keys including the body are logged.
+```shell
+curl -d '{
+  "key1":"value1",
+  "key2":"value2"
+}' -H "Content-Type: application/json" -X POST http://localhost:9081/data
+```
+
+```
+2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 Method                                   = POST
+2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 URL                                      = /data
+2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 Body                                     = {\n  "key1":"value1",\n  "key2":"value2"\n}
 ```

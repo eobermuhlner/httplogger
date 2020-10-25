@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"html"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sort"
@@ -32,6 +33,7 @@ func main() {
 		"\"Header.*\" will match all headers.\n"+
 		"Alternatively list the explicit headers (e.g. \"Header.Accept\").\n"+
 		"The default will log everything.")
+	logBody := flag.Bool("body", false, "Log body.")
 	flag.Parse()
 
 	var keys = map[string]bool{}
@@ -102,6 +104,17 @@ func main() {
 				}
 			}
 		}
+
+		if *logBody || MatchesExplicitKey("Body", keys) {
+			if bodyBytes, err := ioutil.ReadAll(r.Body); err == nil {
+				body := EncodeBackslash(string(bodyBytes))
+				if body != "" {
+					LogString(req, "Body", body)
+				}
+			} else {
+				log.Printf("WARN Failed to read body: %v", err)
+			}
+		}
 	})
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), nil))
@@ -112,6 +125,10 @@ func MatchesKey(key string, keys map[string]bool) bool {
 		return true
 	}
 
+	return MatchesExplicitKey(key, keys)
+}
+
+func MatchesExplicitKey(key string, keys map[string]bool) bool {
 	_, ok := keys[strings.ToLower(key)]
 	return ok
 }
@@ -147,4 +164,19 @@ func LogStrings(req string, name string, values []string) {
 	for _, value := range values {
 		log.Printf("%v %-40v = %v\n", req, name, value)
 	}
+}
+
+func EncodeBackslash(str string) string {
+	result := strings.Builder{}
+
+	for _, c := range str {
+		switch c {
+		case '\n':
+			result.WriteString("\\n")
+		default:
+			result.WriteString(string(c))
+		}
+	}
+
+	return result.String()
 }
