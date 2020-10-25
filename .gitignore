@@ -1,0 +1,7 @@
+# IntelliJ stuff
+.idea
+*.iml
+
+# Build artefacts
+httplogger.exe
+httplogger
