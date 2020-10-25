@@ -11,8 +11,27 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
+
+var (
+	keys = map[string]bool{}
+)
+
+type RequestId struct {
+	sync.Mutex
+	count int
+}
+
+func (req *RequestId) next() string {
+	req.Lock()
+	defer req.Unlock()
+
+	req.count++
+
+	return fmt.Sprintf("%v#%v", time.Now().Format(time.RFC3339), req.count)
+}
 
 func main() {
 	port := flag.Int("port", 8080, "Server port to listen.")
@@ -39,15 +58,15 @@ func main() {
 		"Newlines in body are escaped as \\n to keep the body in a single line.")
 	flag.Parse()
 
-	var keys = map[string]bool{}
 	if *logs != "" {
 		for _, key := range strings.Split(*logs, ",") {
 			keys[strings.ToLower(key)] = true
 		}
 	}
 
+	requestId := RequestId{}
+
 	log.Println("Started httplogger")
-	count := 0
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := fmt.Fprint(w, *response)
@@ -55,8 +74,7 @@ func main() {
 			log.Printf("WARN Failed writing response: %v", err)
 		}
 
-		count++
-		req := fmt.Sprintf("%v#%v", time.Now().Format(time.RFC3339), count)
+		req := requestId.next()
 
 		if MatchesKey("Proto", keys) {
 			LogString(req, "Proto", html.EscapeString(r.Proto))
