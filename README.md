@@ -22,7 +22,22 @@ Example for a request id: `2020-10-25T11:17:35+01:00#1`
 ## Usage
 
 ```
-httplogger [-port PORT] [-response RESPONSE]
+Usage of httplogger:
+  -log string
+        Comma separated list of keys to be logged.
+        Supported keys:
+        - Method
+        - URL
+        - RemoteAddr
+        - Header.*
+        - JWT.*
+        - JWT.PayLoad
+        "Header.*" will match all headers.
+        Alternatively list the explicit headers to log (e.g. "Header.Accept").
+  -port int
+        Server port to listen. (default 8080)
+  -response string
+        Response to send.
 ```
 
 The default port is 8080.

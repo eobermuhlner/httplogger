@@ -14,16 +14,19 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 8080, "Server port")
-	response := flag.String("response", "", "Response")
-	logs := flag.String("log", "", "Comma separated list of keys to be logged\n"+
+	port := flag.Int("port", 8080, "Server port to listen.")
+	response := flag.String("response", "", "Response to send.")
+	logs := flag.String("log", "", "Comma separated list of keys to be logged.\n"+
 		"Supported keys: \n"+
 		"- Method\n"+
 		"- URL\n"+
 		"- RemoteAddr\n"+
 		"- Header.*\n"+
 		"- JWT.*\n"+
-		"- JWT.PayLoad")
+		"- JWT.PayLoad\n"+
+		"\"Header.*\" will match all headers.\n"+
+		"Alternatively list the explicit headers to log (e.g. \"Header.Accept\").\n"+
+		"The default will log everything.")
 	flag.Parse()
 
 	var keys = map[string]bool{}
