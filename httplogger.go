@@ -36,8 +36,9 @@ func (req *RequestId) next() string {
 func main() {
 	port := flag.Int("port", 8080, "Server port to listen.")
 	response := flag.String("response", "", "Response to send.")
-	logs := flag.String("log", "", "Comma separated list of keys to be logged.\n"+
+	logs := flag.String("log", "*", "Comma separated list of keys to be logged.\n"+
 		"Supported keys: \n"+
+		"- *\n"+
 		"- Proto\n"+
 		"- Host\n"+
 		"- RequestURI\n"+
@@ -49,13 +50,15 @@ func main() {
 		"- JWT.*\n"+
 		"- JWT.PayLoad\n"+
 		"- JWT.Header\n"+
-		"- Body\n"+
+		"- Body (not in default)\n"+
+		"\n"+
 		"\"Header.*\" will match all headers.\n"+
 		"Alternatively list the explicit headers (e.g. \"Header.Accept\").\n"+
-		"The default will log everything.")
-	logBody := flag.Bool("body", false, "Log request body.\n"+
-		"Empty body will not be logged.\n"+
-		"Newlines in body are escaped as \\n to keep the body in a single line.")
+		"\n"+
+		"The body can be very large and is therefore not part of the \"*\" group.\n"+
+		"To log all keys and the body you need to specify -log '*,body'"+
+		"\n"+
+		"The default will log everything except the body.\n")
 	flag.Parse()
 
 	if *logs != "" {
@@ -66,7 +69,7 @@ func main() {
 
 	requestId := RequestId{}
 
-	log.Println("Started httplogger")
+	log.Println("Started httplogger", *port, *logs)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := fmt.Fprint(w, *response)
@@ -76,30 +79,30 @@ func main() {
 
 		req := requestId.next()
 
-		if MatchesKey("Proto", keys) {
+		if MatchesKey("*", "Proto") {
 			LogString(req, "Proto", html.EscapeString(r.Proto))
 		}
-		if MatchesKey("Host", keys) {
+		if MatchesKey("*", "Host") {
 			LogString(req, "Host", r.Host)
 		}
-		if MatchesKey("RequestURI", keys) {
+		if MatchesKey("*", "RequestURI") {
 			LogString(req, "RequestURI", html.EscapeString(r.RequestURI))
 		}
-		if MatchesKey("Method", keys) {
+		if MatchesKey("*", "Method") {
 			LogString(req, "Method", r.Method)
 		}
-		if MatchesKey("URL", keys) {
+		if MatchesKey("*", "URL") {
 			LogString(req, "URL", html.EscapeString(r.URL.Path))
 		}
-		if MatchesKey("RemoteAddr", keys) {
+		if MatchesKey("*", "RemoteAddr") {
 			LogString(req, "RemoteAddr", r.RemoteAddr)
 		}
-		if MatchesKey("TransferEncoding", keys) {
+		if MatchesKey("*", "TransferEncoding") {
 			LogStrings(req, "TransferEncoding", r.TransferEncoding)
 		}
 		for _, k := range SortedKeys(r.Header) {
 			key := fmt.Sprintf("Header.%v", k)
-			if MatchesKey("Header.*", keys) || MatchesKey(key, keys) {
+			if MatchesKey("*", "Header.*", key) {
 				LogStrings(req, key, r.Header[k])
 			}
 		}
@@ -108,14 +111,14 @@ func main() {
 			for _, authorization := range authorizations {
 				if strings.HasPrefix(authorization, "Bearer ") {
 					token := strings.TrimPrefix(authorization, "Bearer ")
-					if MatchesKey("JWT.*", keys) || MatchesKey("JWT.Header", keys) {
+					if MatchesKey("*", "JWT.*", "JWT.Header") {
 						if jwtHeader, err := DecodeJWT(token, 0); err == nil {
 							LogString(req, "JWT.Header", jwtHeader)
 						} else {
 							log.Printf("WARN Invalid JWT header: %v", err)
 						}
 					}
-					if MatchesKey("JWT.*", keys) || MatchesKey("JWT.Payload", keys) {
+					if MatchesKey("*", "JWT.*", "JWT.Payload") {
 						if jwtPayload, err := DecodeJWT(token, 1); err == nil {
 							LogString(req, "JWT.Payload", jwtPayload)
 						} else {
@@ -126,7 +129,7 @@ func main() {
 			}
 		}
 
-		if *logBody || MatchesExplicitKey("Body", keys) {
+		if MatchesKey("Body") {
 			if bodyBytes, err := ioutil.ReadAll(r.Body); err == nil {
 				body := EncodeBackslash(string(bodyBytes))
 				if body != "" {
@@ -141,17 +144,13 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), nil))
 }
 
-func MatchesKey(key string, keys map[string]bool) bool {
-	if len(keys) == 0 {
-		return true
+func MatchesKey(key ...string) bool {
+	for _, k := range key {
+		if _, ok := keys[strings.ToLower(k)]; ok {
+			return true
+		}
 	}
-
-	return MatchesExplicitKey(key, keys)
-}
-
-func MatchesExplicitKey(key string, keys map[string]bool) bool {
-	_, ok := keys[strings.ToLower(key)]
-	return ok
+	return false
 }
 
 func SortedKeys(m map[string][]string) []string {

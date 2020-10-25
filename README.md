@@ -15,6 +15,10 @@ The `httplogger` logs the following information for every request:
 - Header.* (all headers present in the request)
 - JWT.* (if the header `Authorization: Bearer` contains a valid JWT)
 
+
+Because the body can be very large you need to explicitely add it 
+- Body ()
+
 Every logged request is identified with a unique request id consisting of:
 - RFC3339 timestamp
 - '#'
@@ -27,13 +31,10 @@ Example for a request id: `2020-10-25T11:17:35+01:00#1`
 
 ```
 Usage of httplogger:
-  -body
-        Log request body.
-        Empty body will not be logged.
-        Newlines in body are escaped as \n to keep the body in a single line.
   -log string
         Comma separated list of keys to be logged.
         Supported keys:
+        - *
         - Proto
         - Host
         - RequestURI
@@ -45,10 +46,15 @@ Usage of httplogger:
         - JWT.*
         - JWT.PayLoad
         - JWT.Header
-        - Body
+        - Body (not in default)
+
         "Header.*" will match all headers.
         Alternatively list the explicit headers (e.g. "Header.Accept").
-        The default will log everything.
+
+        The body can be very large and is therefore not part of the "*" group.
+        To log all keys and the body you need to specify -log '*,body'
+        The default will log everything except the body.
+         (default "*")
   -port int
         Server port to listen. (default 8080)
   -response string
