@@ -9,8 +9,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
-
 
 func main() {
 	port := flag.Int("port", 8080, "Server port")
@@ -21,7 +21,7 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		count++
-		req := fmt.Sprintf("#%v", count)
+		req := fmt.Sprintf("%v#%v", time.Now().Format(time.RFC3339), count)
 
 		LogString(req, "Method", r.Method)
 		LogString(req, "URL", html.EscapeString(r.URL.Path))
@@ -34,7 +34,7 @@ func main() {
 			for _, authorization := range authorizations {
 				if strings.HasPrefix(authorization, "Bearer ") {
 					token := authorization[7:]
-					jwt, err := DecodeJWT(token);
+					jwt, err := DecodeJWT(token)
 					if jwt != "" {
 						LogString(req, "JWT", jwt)
 					}
