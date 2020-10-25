@@ -155,7 +155,7 @@ once as header and once decoded as JWT header and payload.
 Testing the same example with a JWT bearer token but limiting the logged keys:
 
 ```
-httplogger -port 9081 -response "Hello, world" -log "method,url,header.user-agent,jwt.payload
+httplogger -port 9081 -response "Hello, world" -log "method,url,header.user-agent,jwt.payload"
 ```
 
 Only the requested log keys show up.
@@ -214,9 +214,9 @@ The body is logged on a single line:
 2020/10/25 16:56:26 2020-10-25T16:56:26+01:00#1 Body                                     = {\n  "key1":"value1",\n  "key2":"value2"\n}
 ```
 
-### Example: POST request without body
+### Example: POST request ignoring body
 
-To exclude a key from logging prefix it with "!":
+To exclude a key from logging, prefix it with "!":
 ```
 httplogger -port 9081 -log '*,!body'
 ```
