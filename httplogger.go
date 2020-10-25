@@ -33,7 +33,7 @@ func main() {
 	var keys = map[string]bool{}
 	if *logs != "" {
 		for _, key := range strings.Split(*logs, ",") {
-			keys[key] = true
+			keys[strings.ToLower(key)] = true
 		}
 	}
 
@@ -96,7 +96,7 @@ func MatchesKeys(key string, keys map[string]bool) bool {
 		return true
 	}
 
-	_, ok := keys[key]
+	_, ok := keys[strings.ToLower(key)]
 	return ok
 }
 

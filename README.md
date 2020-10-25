@@ -4,11 +4,11 @@ The `httplogger` is a standalone HTTP server that accepts all request and logs t
 
 ## Features
 
-The `httplogger` logs for every request:
-- Method
-- URL
-- RemoteAddr
-- Header.*
+The `httplogger` logs the following information for every request:
+- Method (for example `GET`)
+- URL (for example `/foo`)
+- RemoteAddr 
+- Header.* (all headers present in the request)
 - JWT.* (if the header `Authorization: Bearer` contains a valid JWT)
 
 Every logged request is identified with a unique request id consisting of:
@@ -45,6 +45,13 @@ The default port is 8080.
 
 The default response is an empty response.
 
+The default setting will log everything.
+The list of log keys is case insensitive.
+
+Example:
+```
+httplogger -port 9081 -response "Hello, world" -log "method,url,header.user-agent,jwt.*"
+```
 
 ## Use Cases
 
@@ -107,4 +114,17 @@ curl -s -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiO
 2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 Header.User-Agent                        = curl/7.65.3
 2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 JWT.Header                               = {"alg":"HS256","typ":"JWT"}
 2020/10/25 13:10:07 2020-10-25T13:10:07+01:00#3 JWT.Payload                              = {"sub":"1234567890","name":"John Doe","iat":1516239022}
+```
+
+Testing the same example with a JWT bearer token but limiting the logged keys:
+
+```
+httplogger -port 9081 -response "Hello, world" -log "method,url,header.user-agent,jwt.payload
+```
+
+```
+2020/10/25 14:28:31 2020-10-25T14:28:31+01:00#4 Method                                   = GET
+2020/10/25 14:28:31 2020-10-25T14:28:31+01:00#4 URL                                      = /foo
+2020/10/25 14:28:31 2020-10-25T14:28:31+01:00#4 Header.User-Agent                        = curl/7.65.3
+2020/10/25 14:28:31 2020-10-25T14:28:31+01:00#4 JWT.Payload                              = {"sub":"1234567890","name":"John Doe","iat":1516239022}
 ```
