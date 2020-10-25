@@ -4,11 +4,19 @@ The `httplogger` is a standalone HTTP server that accepts all request and logs t
 
 ## Features
 
-The `httplogger` logs:
+The `httplogger` logs for every request:
 - Method
 - URL
-- Headers
-- JWT payload
+- RemoteAddr
+- Header.*
+- JWT.Payload (if encountered in `Authorization: Bearer` header)
+
+Every logged request is identified with a unique request id consisting of:
+- RFC3339 timestamp
+- '#'
+- counter since start of `httplogger`
+
+Example for a request id: `2020-10-25T11:17:35+01:00#1`
 
 
 ## Usage
@@ -27,6 +35,7 @@ Main use cases are:
 - Auditing of HTTP requests, especially in a Kubernetes/Istio cluster
 
 In a Kubernetes/Istio shadow traffic can be used to send a copy of the HTTP request to `httplogger`. 
+
 
 ## Example
 
@@ -50,7 +59,7 @@ Example for a GET request from a web browser:
 2020/10/25 11:17:35 2020-10-25T11:17:35+01:00#1 Header.User-Agent                        = [Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36]
 ```
 
-Example with JWT bearer token using curl
+Example with JWT bearer token (see [jwt.io](https://jwt.io/#debugger-io)) using curl:
 
 ```shell
 curl -s -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" http://localhost:9081/foo
