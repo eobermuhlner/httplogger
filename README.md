@@ -22,10 +22,12 @@ Example for a request id: `2020-10-25T11:17:35+01:00#1`
 ## Usage
 
 ```
-httplogger [-port PORT]
+httplogger [-port PORT] [-response RESPONSE]
 ```
 
 The default port is 8080.
+
+The default response is an empty response.
 
 
 ## Use Cases
