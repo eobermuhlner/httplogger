@@ -16,7 +16,22 @@ import (
 func main() {
 	port := flag.Int("port", 8080, "Server port")
 	response := flag.String("response", "", "Response")
+	logs := flag.String("log", "", "Comma separated list of keys to be logged\n"+
+		"Supported keys: \n"+
+		"- Method\n"+
+		"- URL\n"+
+		"- RemoteAddr\n"+
+		"- Header.*\n"+
+		"- JWT.*\n"+
+		"- JWT.PayLoad")
 	flag.Parse()
+
+	var keys = map[string]bool{}
+	if *logs != "" {
+		for _, key := range strings.Split(*logs, ",") {
+			keys[key] = true
+		}
+	}
 
 	log.Println("Started httplogger")
 	count := 0
@@ -30,20 +45,31 @@ func main() {
 		count++
 		req := fmt.Sprintf("%v#%v", time.Now().Format(time.RFC3339), count)
 
-		LogString(req, "Method", r.Method)
-		LogString(req, "URL", html.EscapeString(r.URL.Path))
-		LogString(req, "RemoteAddr", r.RemoteAddr)
+		if MatchesKeys("Method", keys) {
+			LogString(req, "Method", r.Method)
+		}
+		if MatchesKeys("URL", keys) {
+			LogString(req, "URL", html.EscapeString(r.URL.Path))
+		}
+		if MatchesKeys("RemoteAddr", keys) {
+			LogString(req, "RemoteAddr", r.RemoteAddr)
+		}
 		for _, k := range SortedKeys(r.Header) {
-			LogStrings(req, fmt.Sprintf("Header.%v", k), r.Header[k])
+			key := fmt.Sprintf("Header.%v", k)
+			if MatchesKeys("Header.*", keys) || MatchesKeys(key, keys) {
+				LogStrings(req, key, r.Header[k])
+			}
 		}
 
 		if authorizations, ok := r.Header["Authorization"]; ok {
 			for _, authorization := range authorizations {
 				if strings.HasPrefix(authorization, "Bearer ") {
 					token := authorization[7:]
-					jwt, err := DecodeJWT(token)
-					if jwt != "" {
-						LogString(req, "JWT.Payload", jwt)
+					jwtPayload, err := DecodeJWT(token)
+					if jwtPayload != "" {
+						if MatchesKeys("JWT.*", keys) || MatchesKeys("JWT.Payload", keys) {
+							LogString(req, "JWT.Payload", jwtPayload)
+						}
 					}
 					if err != nil {
 						log.Printf("WARN Invalid JWT: %v", err)
@@ -54,6 +80,15 @@ func main() {
 	})
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), nil))
+}
+
+func MatchesKeys(key string, keys map[string]bool) bool {
+	if len(keys) == 0 {
+		return true
+	}
+
+	_, ok := keys[key]
+	return ok
 }
 
 func SortedKeys(m map[string][]string) []string {
