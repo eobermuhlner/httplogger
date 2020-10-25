@@ -122,6 +122,8 @@ func LogString(req string, name string, value string) {
 	log.Printf("%v %-40v = %v\n", req, name, value)
 }
 
-func LogStrings(req string, name string, value []string) {
-	log.Printf("%v %-40v = %v\n", req, name, value)
+func LogStrings(req string, name string, values []string) {
+	for _, value := range values {
+		log.Printf("%v %-40v = %v\n", req, name, value)
+	}
 }
