@@ -8,6 +8,7 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 )
@@ -26,8 +27,8 @@ func main() {
 		LogString(req, "Method", r.Method)
 		LogString(req, "URL", html.EscapeString(r.URL.Path))
 		LogString(req, "RemoteAddr", r.RemoteAddr)
-		for k, v := range r.Header {
-			LogStrings(req, fmt.Sprintf("Header[%v]", k), v)
+		for _, k := range SortedKeys(r.Header) {
+			LogStrings(req, fmt.Sprintf("Header.%v", k), r.Header[k])
 		}
 
 		if authorizations, ok := r.Header["Authorization"]; ok {
@@ -36,10 +37,10 @@ func main() {
 					token := authorization[7:]
 					jwt, err := DecodeJWT(token)
 					if jwt != "" {
-						LogString(req, "JWT", jwt)
+						LogString(req, "JWT.Payload", jwt)
 					}
 					if err != nil {
-						log.Printf("Invalid JWT: %v", err)
+						log.Printf("WARN Invalid JWT: %v", err)
 					}
 				}
 			}
@@ -47,6 +48,17 @@ func main() {
 	})
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), nil))
+}
+
+func SortedKeys(m map[string][]string) []string {
+	keys := make([]string, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func DecodeJWT(token string) (string, error) {
@@ -63,9 +75,9 @@ func DecodeJWT(token string) (string, error) {
 }
 
 func LogString(req string, name string, value string) {
-	log.Printf("%v %-30v = %v\n", req, name, value)
+	log.Printf("%v %-40v = %v\n", req, name, value)
 }
 
 func LogStrings(req string, name string, value []string) {
-	log.Printf("%v %-30v = %v\n", req, name, value)
+	log.Printf("%v %-40v = %v\n", req, name, value)
 }
