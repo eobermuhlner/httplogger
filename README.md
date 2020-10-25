@@ -27,22 +27,28 @@ Example for a request id: `2020-10-25T11:17:35+01:00#1`
 
 ```
 Usage of httplogger:
+  -body
+        Log request body.
+        Empty body will not be logged.
+        Newlines in body are escaped as \n to keep the body in a single line.
   -log string
         Comma separated list of keys to be logged.
         Supported keys:
         - Proto
         - Host
         - RequestURI
-        - TransferEncoding
         - Method
         - URL
         - RemoteAddr
+        - TransferEncoding
         - Header.*
         - JWT.*
-        - JWT.Header
         - JWT.PayLoad
+        - JWT.Header
+        - Body
         "Header.*" will match all headers.
         Alternatively list the explicit headers (e.g. "Header.Accept").
+        The default will log everything.
   -port int
         Server port to listen. (default 8080)
   -response string

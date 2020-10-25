@@ -30,10 +30,13 @@ func main() {
 		"- JWT.*\n"+
 		"- JWT.PayLoad\n"+
 		"- JWT.Header\n"+
+		"- Body\n"+
 		"\"Header.*\" will match all headers.\n"+
 		"Alternatively list the explicit headers (e.g. \"Header.Accept\").\n"+
 		"The default will log everything.")
-	logBody := flag.Bool("body", false, "Log body.")
+	logBody := flag.Bool("body", false, "Log request body.\n"+
+		"Empty body will not be logged.\n"+
+		"Newlines in body are escaped as \\n to keep the body in a single line.")
 	flag.Parse()
 
 	var keys = map[string]bool{}
