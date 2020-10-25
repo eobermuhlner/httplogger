@@ -18,9 +18,13 @@ func main() {
 	response := flag.String("response", "", "Response to send.")
 	logs := flag.String("log", "", "Comma separated list of keys to be logged.\n"+
 		"Supported keys: \n"+
+		"- Proto\n"+
+		"- Host\n"+
+		"- RequestURI\n"+
 		"- Method\n"+
 		"- URL\n"+
 		"- RemoteAddr\n"+
+		"- TransferEncoding\n"+
 		"- Header.*\n"+
 		"- JWT.*\n"+
 		"- JWT.PayLoad\n"+
@@ -49,18 +53,30 @@ func main() {
 		count++
 		req := fmt.Sprintf("%v#%v", time.Now().Format(time.RFC3339), count)
 
-		if MatchesKeys("Method", keys) {
+		if MatchesKey("Proto", keys) {
+			LogString(req, "Proto", html.EscapeString(r.Proto))
+		}
+		if MatchesKey("Host", keys) {
+			LogString(req, "Host", r.Host)
+		}
+		if MatchesKey("RequestURI", keys) {
+			LogString(req, "RequestURI", html.EscapeString(r.RequestURI))
+		}
+		if MatchesKey("Method", keys) {
 			LogString(req, "Method", r.Method)
 		}
-		if MatchesKeys("URL", keys) {
+		if MatchesKey("URL", keys) {
 			LogString(req, "URL", html.EscapeString(r.URL.Path))
 		}
-		if MatchesKeys("RemoteAddr", keys) {
+		if MatchesKey("RemoteAddr", keys) {
 			LogString(req, "RemoteAddr", r.RemoteAddr)
+		}
+		if MatchesKey("TransferEncoding", keys) {
+			LogStrings(req, "TransferEncoding", r.TransferEncoding)
 		}
 		for _, k := range SortedKeys(r.Header) {
 			key := fmt.Sprintf("Header.%v", k)
-			if MatchesKeys("Header.*", keys) || MatchesKeys(key, keys) {
+			if MatchesKey("Header.*", keys) || MatchesKey(key, keys) {
 				LogStrings(req, key, r.Header[k])
 			}
 		}
@@ -68,15 +84,15 @@ func main() {
 		if authorizations, ok := r.Header["Authorization"]; ok {
 			for _, authorization := range authorizations {
 				if strings.HasPrefix(authorization, "Bearer ") {
-					token := authorization[7:]
-					if MatchesKeys("JWT.*", keys) || MatchesKeys("JWT.Header", keys) {
+					token := strings.TrimPrefix(authorization, "Bearer ")
+					if MatchesKey("JWT.*", keys) || MatchesKey("JWT.Header", keys) {
 						if jwtHeader, err := DecodeJWT(token, 0); err == nil {
 							LogString(req, "JWT.Header", jwtHeader)
 						} else {
 							log.Printf("WARN Invalid JWT header: %v", err)
 						}
 					}
-					if MatchesKeys("JWT.*", keys) || MatchesKeys("JWT.Payload", keys) {
+					if MatchesKey("JWT.*", keys) || MatchesKey("JWT.Payload", keys) {
 						if jwtPayload, err := DecodeJWT(token, 1); err == nil {
 							LogString(req, "JWT.Payload", jwtPayload)
 						} else {
@@ -91,7 +107,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), nil))
 }
 
-func MatchesKeys(key string, keys map[string]bool) bool {
+func MatchesKey(key string, keys map[string]bool) bool {
 	if len(keys) == 0 {
 		return true
 	}
